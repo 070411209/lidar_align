@@ -247,7 +247,7 @@ void Aligner::lidarOdomTransform(Lidar *lidar, Odom *odom){
     }
 
     optimize(lb, ub, &opt_data, &x);
-
+    // calibration brief
     if (!config_.output_pointcloud_path.empty()){
         ROS_INFO("Saving Aligned Pointcloud...");
         lidar->saveCombinedPointcloud(config_.output_pointcloud_path);

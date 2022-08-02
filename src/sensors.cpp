@@ -157,6 +157,8 @@ void Lidar::saveCombinedPointcloud(const std::string &file_path) const
     getCombinedPointcloud(&combined);
     pcl::PLYWriter writer;
     writer.write(file_path, combined, true);
+    ROS_INFO("Saving pcd Pointcloud...");
+    pcl::io::savePCDFileASCII("/home/one/test_ws/a.pcd", combined);
 }
 
 void Lidar::setOdomOdomTransforms(const Odom &odom, const double time_offset){      //~ default: `time_offset=0

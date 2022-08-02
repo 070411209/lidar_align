@@ -8,6 +8,7 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
+#include <pcl/visualization/pcl_visualizer.h>
 
 #include "lidar_align/transform.h"
 

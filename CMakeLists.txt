@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(lidar_align)
 
-add_definitions(-std=c++11 -ofast)
-
+set(CMAKE_CXX_STANDARD 11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   image_transport

@@ -59,6 +59,6 @@ int main(int argc, char **argv){
     lidar.setOdomOdomTransforms(odom);
     Aligner aligner(Aligner::getConfig(&nh_private));
     aligner.lidarOdomTransform(&lidar, &odom);
-
+    std::cout << "------------ End --------------" << std::endl;
     return 0;
 }
