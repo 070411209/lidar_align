@@ -138,6 +138,7 @@ void Aligner::optimize(const std::vector<double> &lb, const std::vector<double> 
     double minf;
     std::vector<double> grad;       //~ TODO: `grad is not used???
     nlopt::result result = opt.optimize(*x, minf);          //~ Objective function optimized here!!! `x is calculate iteratively.
+    std::cout << "\n ###### optimize result is " << result << std::endl;
     LidarOdomMinimizer(*x, grad, opt_data);
 }
 
