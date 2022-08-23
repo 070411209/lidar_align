@@ -36,7 +36,7 @@ int main(int argc, char **argv){
     std::string input_csv_path;
     ROS_INFO("Loading Transformation Data...");
     if (transforms_from_csv){
-        ROS_INFO("--- csv ---");
+        ROS_INFO("------------- load csv -------------");
         if (!nh_private.getParam("input_csv_path", input_csv_path)){
             ROS_FATAL("Could not find input_csv_path parameter, exiting");
             exit(EXIT_FAILURE);

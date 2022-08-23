@@ -36,11 +36,16 @@ void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointc
 
         pointcloud->push_back(point);
     }
+    // PCLHeader stamp: The value represents microseconds since 1970-01-01 00:00:00 (the UNIX epoch)
+    // string substr (size_t pos = 0, size_t len = npos) const;
     int len = name.size();
-    std::string t_ = name.substr(len-23, len-5);
-    pointcloud->header.stamp = std::atoi(t_.c_str());
-        
-    std::cout << "----> time: " << t_ << " 加载了 " << cloud_in.points.size() << " 个数据点" << std::endl;
+    std::size_t pos = name.find(".pcd");
+    std::string t_ = name.substr(pos-19, 19);
+    pointcloud->header.stamp = std::stoll(t_.c_str()) / 1000ull;   //pcl_stamp = stamp.toNSec() / 1000ull;
+    pointcloud->header.seq = seq_;
+    pointcloud->header.frame_id = "no";
+    seq_++;  
+    std::cout << "----> The " << seq_ << " of time: " << t_ << " 加载了 " << cloud_in.points.size() << " 个数据点" << std::endl;
 
 }
 
@@ -213,7 +218,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
     size_t tform_num = 0;
     while (file.peek() != EOF)
     {
-        std::cout << " Loading transform: \e[1m" << tform_num++ << "\e[0m from csv file" << '\r' << std::flush;
+        std::cout << " Loading transform: " << tform_num++ << " from csv file" << '\r' << std::flush;
 
         Timestamp stamp;
         Transform T;
@@ -223,7 +228,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
             odom->addTransformData(stamp, T);
         }
     }
-    ROS_INFO("#loadTformFromMaplabCSV sucess!");
+    ROS_INFO("#loadTformFromMaplabCSV sucess! Loading transform: %d from csv file", tform_num);
     return true;
 }
 
@@ -231,6 +236,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
 bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
                                     Transform *T)
 {
+    // getline() takes an input stream, and writes it to output
     std::string line;
     std::getline(str, line);
 
@@ -262,7 +268,7 @@ bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
     constexpr size_t RX = 6;
     constexpr size_t RY = 7;
     constexpr size_t RZ = 8;
-
+    // 传递参数提供的字符串转换为long long int
     *stamp = std::stoll(data[TIME]) / 1000ll;
     *T = Transform(Transform::Translation(std::stod(data[X]), std::stod(data[Y]), std::stod(data[Z])),
                     Transform::Rotation(std::stod(data[RW]), std::stod(data[RX]), std::stod(data[RY]), std::stod(data[RZ])));
