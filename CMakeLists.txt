@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 # NLOPT is frustratingly inconsistent in the name of its cmake file so we use our own
 list(APPEND CMAKE_FIND_ROOT_PATH ${CMAKE_SOURCE_DIR})
 find_package(NLOPT REQUIRED)      # commented by larrydong
+find_package(Boost REQUIRED COMPONENTS filesystem system)
 
 include_directories(
   include
@@ -38,7 +39,7 @@ add_executable(lidar_align_node
   src/lidar_align_node.cpp
   
 )
-target_link_libraries(lidar_align_node ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(lidar_align_node ${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 install(DIRECTORY include/lidar_align
   DESTINATION include

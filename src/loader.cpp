@@ -16,6 +16,34 @@ Loader::Config Loader::getConfig(ros::NodeHandle *nh){
     return config;
 }
 
+void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointcloud) {
+    pcl::PointCloud<pcl::PointXYZI> cloud_in;
+    if (pcl::io::loadPCDFile(name, cloud_in) < 0)
+    {
+        PCL_ERROR("\a->点云文件不存在！\n");
+        return;
+    }
+
+    for (const Point &raw_point : cloud_in){
+        PointAllFields point;
+        point.x = raw_point.x;
+        point.y = raw_point.y;
+        point.z = raw_point.z;
+        point.intensity = raw_point.intensity;
+
+        if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z) || !std::isfinite(point.intensity))
+            continue;
+
+        pointcloud->push_back(point);
+    }
+    int len = name.size();
+    std::string t_ = name.substr(len-23, len-5);
+    pointcloud->header.stamp = std::atoi(t_.c_str());
+        
+    std::cout << "----> time: " << t_ << " 加载了 " << cloud_in.points.size() << " 个数据点" << std::endl;
+
+}
+
 void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,LoaderPointcloud *pointcloud){
     bool has_timing = false;
     bool has_intensity = false;
@@ -67,6 +95,50 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,LoaderPointcl
         }
         pointcloud->header = raw_pointcloud.header;
     }
+}
+
+bool Loader::loadPointcloudFromPCD(const std::string &pcd_path, const Scan::Config &scan_config, Lidar *lidar){
+    if (!boost::filesystem::exists(pcd_path) && !boost::filesystem::is_directory(pcd_path)) {
+        std::cerr << "# ERROR: Cannot find input directory " << pcd_path << "." << std::endl;
+        return false;
+    }
+    // look for pcd in input directory
+    std::string fileExtension = ".pcd";
+    std::string prefixL = "";
+    std::vector<std::string> pcdFilenames;
+    boost::filesystem::directory_iterator itr;
+    for (boost::filesystem::directory_iterator itr(pcd_path); itr != boost::filesystem::directory_iterator(); ++itr) {
+        if (!boost::filesystem::is_regular_file(itr->status())) continue;
+
+        std::string filename = itr->path().filename().string();
+
+        // check if file extension matches
+        if (filename.compare(filename.length() - fileExtension.length(), fileExtension.length(), fileExtension) != 0) continue;
+
+        // check if prefix matches
+        if (prefixL.empty() || (!prefixL.empty() && (filename.compare(0, prefixL.length(), prefixL) == 0))) {
+            pcdFilenames.push_back(itr->path().string());
+        }
+    }
+    if (pcdFilenames.empty()) {
+        std::cerr << "# ERROR: No chessboard images found." << std::endl;
+        return 1;
+    }
+
+    std::sort(pcdFilenames.begin(), pcdFilenames.end());
+    for(auto val : pcdFilenames) {
+        LoaderPointcloud pointcloud;
+        parsePointcloudPcd(val, &pointcloud);
+        lidar->addPointcloud(pointcloud, scan_config);
+        if (lidar->getNumberOfScans() >= config_.use_n_scans)       //~ useless by default.
+            break;        
+    }    
+    std::cerr << "# INFO: Total pcd: " << pcdFilenames.size() << std::endl;  
+    if (lidar->getTotalPoints() == 0){
+        ROS_ERROR_STREAM("No points were loaded, verify that the bag contains populated, messages of type sensor_msgs/PointCloud2");
+        return false;
+    }         
+    return true;
 }
 
 bool Loader::loadPointcloudFromROSBag(const std::string &bag_path, const Scan::Config &scan_config, Lidar *lidar){
@@ -151,7 +223,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
             odom->addTransformData(stamp, T);
         }
     }
-
+    ROS_INFO("#loadTformFromMaplabCSV sucess!");
     return true;
 }
 
