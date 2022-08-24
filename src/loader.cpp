@@ -40,7 +40,7 @@ void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointc
     // string substr (size_t pos = 0, size_t len = npos) const;
     int len = name.size();
     std::size_t pos = name.find(".pcd");
-    std::string t_ = name.substr(pos-19, 19);
+    std::string t_ = name.substr(pos-19, 19); // 19: ns time length, 3: ns-us time length
     pointcloud->header.stamp = std::stoll(t_.c_str()) / 1000ull;   //pcl_stamp = stamp.toNSec() / 1000ull;
     pointcloud->header.seq = seq_;
     pointcloud->header.frame_id = "no";
@@ -63,6 +63,8 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,LoaderPointcl
 
     if (has_timing){
         pcl::fromROSMsg(msg, *pointcloud);
+        std::cout << "\n ----- time ------" << std::endl;
+        std::cout << pointcloud->header << std::endl;
         return;
     }
     else if (has_intensity){
@@ -218,7 +220,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
     size_t tform_num = 0;
     while (file.peek() != EOF)
     {
-        std::cout << " Loading transform: " << tform_num++ << " from csv file" << '\r' << std::flush;
+        // std::cout << " Loading transform: " << tform_num++ << " from csv file" << '\r' << std::flush;
 
         Timestamp stamp;
         Transform T;
@@ -228,7 +230,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
             odom->addTransformData(stamp, T);
         }
     }
-    ROS_INFO("#loadTformFromMaplabCSV sucess! Loading transform: %d from csv file", tform_num);
+    ROS_INFO("#loadTformFromMaplabCSV sucess! Loading transform: %d from csv file.", tform_num);
     return true;
 }
 
@@ -270,6 +272,8 @@ bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
     constexpr size_t RZ = 8;
     // 传递参数提供的字符串转换为long long int
     *stamp = std::stoll(data[TIME]) / 1000ll;
+    std::cout << "----> GNSS time: " << *stamp << std::endl;
+
     *T = Transform(Transform::Translation(std::stod(data[X]), std::stod(data[Y]), std::stod(data[Z])),
                     Transform::Rotation(std::stod(data[RW]), std::stod(data[RX]), std::stod(data[RY]), std::stod(data[RZ])));
 

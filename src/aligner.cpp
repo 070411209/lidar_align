@@ -221,8 +221,8 @@ void Aligner::lidarOdomTransform(Lidar *lidar, Odom *odom){
 
     if (!config_.local){
         ROS_INFO("Performing Global Optimization...");      //~ globally optimize [x, y, z];
-        std::vector<double> lb = {-M_PI, -M_PI, -M_PI};     //~ lower/upper bound
-        std::vector<double> ub = {M_PI, M_PI, M_PI};
+        std::vector<double> lb = {-M_PI_4, -M_PI_4, -M_PI};     //~ lower/upper bound
+        std::vector<double> ub = {M_PI_4, M_PI_4, M_PI};
         std::vector<double> global_x(3, 0.0);
         optimize(lb, ub, &opt_data, &global_x);     
         config_.local = true;
