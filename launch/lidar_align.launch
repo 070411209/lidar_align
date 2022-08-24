@@ -3,6 +3,7 @@
 
   <arg name="pcd_file" default="/home/one/calib_data/kaiwo/gnss/0817"/>
   <arg name="transforms_from_csv" default="true"/>
+  <arg name="lidar_from_pcd" default="true"/>
   <arg name="csv_file" default="/home/one/calib_data/kaiwo/gnss/0817/m_pose.csv"/>
 
   <node pkg="lidar_align" name="lidar_align" type="lidar_align_node" output="screen">
@@ -11,6 +12,7 @@
     <param name="output_pointcloud_path" value="$(find lidar_align)/results/$(anon lidar_points).ply" />
     <param name="output_calibration_path" value="$(find lidar_align)/results/$(anon calibration).txt" />
     <param name="transforms_from_csv" value="$(arg transforms_from_csv)"/>
+    <param name="lidar_from_pcd" value="$(arg lidar_from_pcd)"/>
   </node>
 
 </launch>
