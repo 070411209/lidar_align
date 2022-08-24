@@ -15,8 +15,9 @@ class Aligner{
 
 public:
     struct Config{
-        bool local = false;
-        std::vector<double> inital_guess{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        bool local = true;
+        // (x,y,z,rx,ry,rz)
+        std::vector<double> inital_guess{-3.1929,  0.0869, -0.9017, -0.018057, 0.00613, -1.56328, 0.0};
         double max_time_offset = 0.1;
         double angular_range = 0.5;
         double translation_range = 1.0;
