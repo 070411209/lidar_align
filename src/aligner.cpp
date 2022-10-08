@@ -146,6 +146,7 @@ std::string Aligner::generateCalibrationString(const Transform &T, const double 
 
     Transform::Vector6 T_log = T.log();
     std::stringstream ss;
+    ss << "---------------------------- Result ----------------------------" << std::endl;
     ss << "Active Transformation Vector (x,y,z,rx,ry,rz) from the Pose Sensor "
             "Frame to  the Lidar Frame:"
         << std::endl
@@ -230,8 +231,10 @@ void Aligner::lidarOdomTransform(Lidar *lidar, Odom *odom){
         x[4] = global_x[1];
         x[5] = global_x[2];
     }
-    else
+    else {
+        ROS_INFO("Performing Local Optimization..."); 
         x = config_.inital_guess;
+    }
 
     ROS_INFO("Performing Local Optimization...                                ");
     std::vector<double> lb = {-config_.translation_range, -config_.translation_range, -config_.translation_range,

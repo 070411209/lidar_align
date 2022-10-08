@@ -8,4 +8,5 @@ Lidar与IMU标定代码实战：lidar_align
 
 
 ## 启动
+catkin build lidar_align
 roslaunch lidar_align lidar_align.launch

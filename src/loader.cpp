@@ -45,11 +45,11 @@ void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointc
     pointcloud->header.seq = seq_;
     pointcloud->header.frame_id = "no";
     seq_++;  
-    std::cout << "----> The " << seq_ << " of time: " << t_ << " 加载了 " << cloud_in.points.size() << " 个数据点" << std::endl;
+    std::cout << "----> The " << seq_ << " of time: " << pointcloud->header.stamp << " 加载了 " << cloud_in.points.size() << " 个数据点" << std::endl;
 
 }
 
-void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,LoaderPointcloud *pointcloud){
+void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointcloud *pointcloud){
     bool has_timing = false;
     bool has_intensity = false;
     for (const sensor_msgs::PointField &field : msg.fields){
@@ -63,8 +63,7 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,LoaderPointcl
 
     if (has_timing){
         pcl::fromROSMsg(msg, *pointcloud);
-        std::cout << "\n ----- time ------" << std::endl;
-        std::cout << pointcloud->header << std::endl;
+        std::cout << "pcd header: " << pointcloud->header.stamp << " " << pointcloud->height << " " << pointcloud->width << std::endl;
         return;
     }
     else if (has_intensity){
@@ -202,6 +201,8 @@ bool Loader::loadTformFromROSBag(const std::string &bag_path, Odom *odom){
 
         Transform T(Transform::Translation(transform_msg.transform.translation.x, transform_msg.transform.translation.y, transform_msg.transform.translation.z),
                     Transform::Rotation(transform_msg.transform.rotation.w, transform_msg.transform.rotation.x, transform_msg.transform.rotation.y, transform_msg.transform.rotation.z));
+        
+        std::cout << "gnss time: " << stamp << " " << transform_msg.transform.translation.x << " " << transform_msg.transform.translation.y << " " << transform_msg.transform.translation.z << std::endl;
         odom->addTransformData(stamp, T);
     }
 
@@ -272,9 +273,14 @@ bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
     constexpr size_t RZ = 8;
     // 传递参数提供的字符串转换为long long int
     *stamp = std::stoll(data[TIME]) / 1000ll;
-    std::cout << "----> GNSS time: " << *stamp << std::endl;
+    
+    double local_x = std::stod(data[X])-470810.0;
+    double local_y = std::stod(data[Y])-4399230.0;
+    double local_z = std::stod(data[Z]) - 12.0;
 
-    *T = Transform(Transform::Translation(std::stod(data[X]), std::stod(data[Y]), std::stod(data[Z])),
+    std::cout << "GNSS time: " << *stamp << " " << local_x << " " << local_y << " " << local_z << std::endl;
+
+    *T = Transform(Transform::Translation(local_x, local_y, local_z),
                     Transform::Rotation(std::stod(data[RW]), std::stod(data[RX]), std::stod(data[RY]), std::stod(data[RZ])));
 
     return true;
