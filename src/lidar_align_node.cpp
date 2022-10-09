@@ -29,9 +29,12 @@ int main(int argc, char **argv){
             ROS_FATAL("Error loading pointclouds from ROS bag.");
             exit(0);
         }
-    } else if (!loader.loadPointcloudFromROSBag(input_bag_path, Scan::getConfig(&nh_private), &lidar)){
-        ROS_FATAL("Error loading pointclouds from ROS bag.");
-        exit(0);
+    } else {
+        ROS_INFO("------------- load pointcloud from bag file -------------");
+        if (!loader.loadPointcloudFromROSBag(input_bag_path, Scan::getConfig(&nh_private), &lidar)){
+            ROS_FATAL("Error loading pointclouds from ROS bag.");
+            exit(0);
+        }
     }
 
     ROS_INFO("Load Pointcloud done!!!!!!!!!!");
@@ -52,9 +55,12 @@ int main(int argc, char **argv){
             ROS_FATAL("Error loading transforms from CSV.");
             exit(0);
         }
-    } else if (!loader.loadTformFromROSBag(input_bag_path, &odom)) {       //~ default: load from ROS bag.
-        ROS_FATAL("Error loading transforms from ROS bag.");
-        exit(0);
+    } else {
+        ROS_INFO("------------- load transforms from bag file -------------");
+        if (!loader.loadTformFromROSBag(input_bag_path, &odom)) {       //~ default: load from ROS bag.
+            ROS_FATAL("Error loading transforms from ROS bag.");
+            exit(0);
+        }
     }
 
     ROS_INFO("Load Odom done!!!!!!!!!!");

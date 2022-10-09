@@ -62,7 +62,6 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointc
 
     if (has_timing){
         pcl::fromROSMsg(msg, *pointcloud);
-        std::cout << "pcd header: " << pointcloud->header.stamp << " " << pointcloud->height << " " << pointcloud->width << std::endl;
         return;
     }
     else if (has_intensity){
@@ -100,6 +99,7 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointc
         }
         pointcloud->header = raw_pointcloud.header;
     }
+    std::cout << "msg of pcd header: " << pointcloud->header.stamp << " " << pointcloud->height << " " << pointcloud->width << '\r' << std::flush;
 }
 
 bool Loader::loadPointcloudFromPCD(const std::string &pcd_path, const Scan::Config &scan_config, Lidar *lidar){

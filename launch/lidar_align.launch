@@ -8,7 +8,6 @@
   <arg name="csv_file" default="/home/one/src/Apollo_Lib/deepway_apollo/debug_output/m_pose.csv"/>
 
   <node pkg="lidar_align" name="lidar_align" type="lidar_align_node" output="screen">
-    <!-- <param name="input_bag_path" value="$(arg lidar_file)" /> -->
     <param name="input_bag_path" value="$(arg bag_file)" />
     <param name="input_csv_path" value="$(arg csv_file)" />
     <param name="output_pointcloud_path" value="$(find lidar_align)/results/$(anon lidar_points).ply" />
