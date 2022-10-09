@@ -24,6 +24,7 @@ int main(int argc, char **argv){
     nh_private.getParam("lidar_from_pcd", lidar_from_pcd);
     ROS_INFO("Loading Pointcloud Data...");
     if (lidar_from_pcd) {
+        ROS_INFO("------------- load pointcloud from pcd file -------------");
         if (!loader.loadPointcloudFromPCD(input_bag_path, Scan::getConfig(&nh_private), &lidar)){
             ROS_FATAL("Error loading pointclouds from ROS bag.");
             exit(0);
@@ -41,7 +42,7 @@ int main(int argc, char **argv){
     
     ROS_INFO("Loading Transformation Data...");
     if (transforms_from_csv){
-        ROS_INFO("------------- load csv -------------");
+        ROS_INFO("------------- load transforms from csv file -------------");
         std::string input_csv_path;
         if (!nh_private.getParam("input_csv_path", input_csv_path)){
             ROS_FATAL("Could not find input_csv_path parameter, exiting");

@@ -45,8 +45,7 @@ void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointc
     pointcloud->header.seq = seq_;
     pointcloud->header.frame_id = "no";
     seq_++;  
-    std::cout << "----> The " << seq_ << " of time: " << pointcloud->header.stamp << " 加载了 " << cloud_in.points.size() << " 个数据点" << std::endl;
-
+    std::cout << "The " << seq_ << " of time: " << pointcloud->header.stamp << " load " << cloud_in.points.size() << " points" << '\r' << std::flush;
 }
 
 void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointcloud *pointcloud){
@@ -274,11 +273,11 @@ bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
     // 传递参数提供的字符串转换为long long int
     *stamp = std::stoll(data[TIME]) / 1000ll;
     
-    double local_x = std::stod(data[X])-470810.0;
-    double local_y = std::stod(data[Y])-4399230.0;
+    double local_x = std::stod(data[X]) - 470810.0;
+    double local_y = std::stod(data[Y]) - 4399230.0;
     double local_z = std::stod(data[Z]) - 12.0;
 
-    std::cout << "GNSS time: " << *stamp << " " << local_x << " " << local_y << " " << local_z << std::endl;
+    std::cout << "GNSS time: " << *stamp << " " << local_x << " " << local_y << " " << local_z << '\r' << std::flush;
 
     *T = Transform(Transform::Translation(local_x, local_y, local_z),
                     Transform::Rotation(std::stod(data[RW]), std::stod(data[RX]), std::stod(data[RY]), std::stod(data[RZ])));
