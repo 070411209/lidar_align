@@ -16,7 +16,39 @@ Loader::Config Loader::getConfig(ros::NodeHandle *nh){
     return config;
 }
 
-void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,LoaderPointcloud *pointcloud){
+void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointcloud) {
+    pcl::PointCloud<pcl::PointXYZI> cloud_in;
+    if (pcl::io::loadPCDFile(name, cloud_in) < 0)
+    {
+        PCL_ERROR("\a->点云文件不存在！\n");
+        return;
+    }
+
+    for (const Point &raw_point : cloud_in){
+        PointAllFields point;
+        point.x = raw_point.x;
+        point.y = raw_point.y;
+        point.z = raw_point.z;
+        point.intensity = raw_point.intensity;
+
+        if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z) || !std::isfinite(point.intensity))
+            continue;
+
+        pointcloud->push_back(point);
+    }
+    // PCLHeader stamp: The value represents microseconds since 1970-01-01 00:00:00 (the UNIX epoch)
+    // string substr (size_t pos = 0, size_t len = npos) const;
+    int len = name.size();
+    std::size_t pos = name.find(".pcd");
+    std::string t_ = name.substr(pos-19, 19); // 19: ns time length, 3: ns-us time length
+    pointcloud->header.stamp = std::stoll(t_.c_str()) / 1000ull;   //pcl_stamp = stamp.toNSec() / 1000ull;
+    pointcloud->header.seq = seq_;
+    pointcloud->header.frame_id = "no";
+    seq_++;  
+    std::cout << "The " << seq_ << " of time: " << pointcloud->header.stamp << " load " << cloud_in.points.size() << " points" << '\r' << std::flush;
+}
+
+void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointcloud *pointcloud){
     bool has_timing = false;
     bool has_intensity = false;
     for (const sensor_msgs::PointField &field : msg.fields){
@@ -67,6 +99,51 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg,LoaderPointcl
         }
         pointcloud->header = raw_pointcloud.header;
     }
+    std::cout << "msg of pcd header: " << pointcloud->header.stamp << " " << pointcloud->height << " " << pointcloud->width << '\r' << std::flush;
+}
+
+bool Loader::loadPointcloudFromPCD(const std::string &pcd_path, const Scan::Config &scan_config, Lidar *lidar){
+    if (!boost::filesystem::exists(pcd_path) && !boost::filesystem::is_directory(pcd_path)) {
+        std::cerr << "# ERROR: Cannot find input directory " << pcd_path << "." << std::endl;
+        return false;
+    }
+    // look for pcd in input directory
+    std::string fileExtension = ".pcd";
+    std::string prefixL = "";
+    std::vector<std::string> pcdFilenames;
+    boost::filesystem::directory_iterator itr;
+    for (boost::filesystem::directory_iterator itr(pcd_path); itr != boost::filesystem::directory_iterator(); ++itr) {
+        if (!boost::filesystem::is_regular_file(itr->status())) continue;
+
+        std::string filename = itr->path().filename().string();
+
+        // check if file extension matches
+        if (filename.compare(filename.length() - fileExtension.length(), fileExtension.length(), fileExtension) != 0) continue;
+
+        // check if prefix matches
+        if (prefixL.empty() || (!prefixL.empty() && (filename.compare(0, prefixL.length(), prefixL) == 0))) {
+            pcdFilenames.push_back(itr->path().string());
+        }
+    }
+    if (pcdFilenames.empty()) {
+        std::cerr << "# ERROR: No chessboard images found." << std::endl;
+        return 1;
+    }
+
+    std::sort(pcdFilenames.begin(), pcdFilenames.end());
+    for(auto val : pcdFilenames) {
+        LoaderPointcloud pointcloud;
+        parsePointcloudPcd(val, &pointcloud);
+        lidar->addPointcloud(pointcloud, scan_config);
+        if (lidar->getNumberOfScans() >= config_.use_n_scans)       //~ useless by default.
+            break;        
+    }    
+    std::cerr << "# INFO: Total pcd: " << pcdFilenames.size() << std::endl;  
+    if (lidar->getTotalPoints() == 0){
+        ROS_ERROR_STREAM("No points were loaded, verify that the bag contains populated, messages of type sensor_msgs/PointCloud2");
+        return false;
+    }         
+    return true;
 }
 
 bool Loader::loadPointcloudFromROSBag(const std::string &bag_path, const Scan::Config &scan_config, Lidar *lidar){
@@ -123,6 +200,8 @@ bool Loader::loadTformFromROSBag(const std::string &bag_path, Odom *odom){
 
         Transform T(Transform::Translation(transform_msg.transform.translation.x, transform_msg.transform.translation.y, transform_msg.transform.translation.z),
                     Transform::Rotation(transform_msg.transform.rotation.w, transform_msg.transform.rotation.x, transform_msg.transform.rotation.y, transform_msg.transform.rotation.z));
+        
+        std::cout << "gnss time: " << stamp << " " << transform_msg.transform.translation.x << " " << transform_msg.transform.translation.y << " " << transform_msg.transform.translation.z << std::endl;
         odom->addTransformData(stamp, T);
     }
 
@@ -141,7 +220,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
     size_t tform_num = 0;
     while (file.peek() != EOF)
     {
-        std::cout << " Loading transform: \e[1m" << tform_num++ << "\e[0m from csv file" << '\r' << std::flush;
+        // std::cout << " Loading transform: " << tform_num++ << " from csv file" << '\r' << std::flush;
 
         Timestamp stamp;
         Transform T;
@@ -151,7 +230,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
             odom->addTransformData(stamp, T);
         }
     }
-
+    ROS_INFO("#loadTformFromMaplabCSV sucess! Loading transform: %d from csv file.", tform_num);
     return true;
 }
 
@@ -159,6 +238,7 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
 bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
                                     Transform *T)
 {
+    // getline() takes an input stream, and writes it to output
     std::string line;
     std::getline(str, line);
 
@@ -190,9 +270,16 @@ bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
     constexpr size_t RX = 6;
     constexpr size_t RY = 7;
     constexpr size_t RZ = 8;
-
+    // 传递参数提供的字符串转换为long long int
     *stamp = std::stoll(data[TIME]) / 1000ll;
-    *T = Transform(Transform::Translation(std::stod(data[X]), std::stod(data[Y]), std::stod(data[Z])),
+    
+    double local_x = std::stod(data[X]) - 470810.0;
+    double local_y = std::stod(data[Y]) - 4399230.0;
+    double local_z = std::stod(data[Z]) - 12.0;
+
+    std::cout << "GNSS time: " << *stamp << " " << local_x << " " << local_y << " " << local_z << '\r' << std::flush;
+
+    *T = Transform(Transform::Translation(local_x, local_y, local_z),
                     Transform::Rotation(std::stod(data[RW]), std::stod(data[RX]), std::stod(data[RY]), std::stod(data[RZ])));
 
     return true;

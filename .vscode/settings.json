@@ -68,6 +68,13 @@
         "random": "cpp",
         "set": "cpp",
         "string": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "valarray": "cpp",
+        "alignedvector3": "cpp"
+    },
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#102969",
+        "titleBar.activeBackground": "#163994",
+        "titleBar.activeForeground": "#F8FAFE"
     }
 }

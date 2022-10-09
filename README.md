@@ -135,7 +135,7 @@ Note that Maplab has two CSV exporters. This file-format is the same as produced
 | `inital_guess` |  Initial guess to the calibration (x, y, z, rotation vector, time offset), only used if running in `local` mode. | [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] |
 | `max_time_offset` |  Maximum time offset between sensor clocks in seconds. | 0.1 |
 | `angular_range` | Search range in radians around the `inital_guess` during the local optimization stage. | 0.5 |
-| `translational_range` | Search range around the `inital_guess` during the local optimization stage. | 1.0 |
+| ` ` | Search range around the `inital_guess` during the local optimization stage. | 1.0 |
 | `max_evals` | Maximum number of function evaluations to run | 200 |
 | `xtol` | Tolerance of final solution | 0.0001 |
 | `knn_batch_size` | Number of points to send to each thread when finding nearest points | 1000 |

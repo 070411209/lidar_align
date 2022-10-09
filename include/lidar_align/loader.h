@@ -4,6 +4,7 @@
 #include <pcl/point_types.h>
 #include <ros/ros.h>
 #include "lidar_align/sensors.h"
+#include <boost/filesystem.hpp>
 
 #define PCL_NO_PRECOMPILE
 
@@ -18,13 +19,16 @@ public:
     Loader(const Config &config);
     void parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointcloud *pointcloud);
     bool loadPointcloudFromROSBag(const std::string &bag_path, const Scan::Config &scan_config, Lidar *lidar);
+    bool loadPointcloudFromPCD(const std::string &pcd_path, const Scan::Config &scan_config, Lidar *lidar);
     bool loadTformFromROSBag(const std::string &bag_path, Odom *odom);
     bool loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom);
     static Config getConfig(ros::NodeHandle *nh);
+    void parsePointcloudPcd(const std::string name, LoaderPointcloud *pointcloud);
 
 private:
     static bool getNextCSVTransform(std::istream &str, Timestamp *stamp, Transform *T);
     Config config_;
+    uint64_t seq_ = 0;
 };
 
 

@@ -16,11 +16,12 @@ class Aligner{
 public:
     struct Config{
         bool local = false;
-        std::vector<double> inital_guess{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        double max_time_offset = 0.1;
-        double angular_range = 0.5;
-        double translation_range = 1.0;
-        double max_evals = 200;
+        // from the Pose Sensor Frame to  the Lidar Frame (x,y,z,rx,ry,rz)
+        std::vector<double> inital_guess{-4.3,  0.0, -0.3, 0.0, 0.0, -1.5707, 0.0};
+        double max_time_offset = 0.01;
+        double angular_range = 0.2;
+        double translation_range = 0.5;
+        double max_evals = 100;
         double xtol = 0.0001;
         int knn_batch_size = 1000;
         int knn_k = 1;

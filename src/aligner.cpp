@@ -138,6 +138,7 @@ void Aligner::optimize(const std::vector<double> &lb, const std::vector<double> 
     double minf;
     std::vector<double> grad;       //~ TODO: `grad is not used???
     nlopt::result result = opt.optimize(*x, minf);          //~ Objective function optimized here!!! `x is calculate iteratively.
+    std::cout << "\n ###### optimize result is " << result << std::endl;
     LidarOdomMinimizer(*x, grad, opt_data);
 }
 
@@ -145,6 +146,7 @@ std::string Aligner::generateCalibrationString(const Transform &T, const double 
 
     Transform::Vector6 T_log = T.log();
     std::stringstream ss;
+    ss << "---------------------------- Result ----------------------------" << std::endl;
     ss << "Active Transformation Vector (x,y,z,rx,ry,rz) from the Pose Sensor "
             "Frame to  the Lidar Frame:"
         << std::endl
@@ -220,8 +222,8 @@ void Aligner::lidarOdomTransform(Lidar *lidar, Odom *odom){
 
     if (!config_.local){
         ROS_INFO("Performing Global Optimization...");      //~ globally optimize [x, y, z];
-        std::vector<double> lb = {-M_PI, -M_PI, -M_PI};     //~ lower/upper bound
-        std::vector<double> ub = {M_PI, M_PI, M_PI};
+        std::vector<double> lb = {-M_PI_4, -M_PI_4, -M_PI};     //~ lower/upper bound
+        std::vector<double> ub = {M_PI_4, M_PI_4, M_PI};
         std::vector<double> global_x(3, 0.0);
         optimize(lb, ub, &opt_data, &global_x);     
         config_.local = true;
@@ -229,8 +231,10 @@ void Aligner::lidarOdomTransform(Lidar *lidar, Odom *odom){
         x[4] = global_x[1];
         x[5] = global_x[2];
     }
-    else
+    else {
+        ROS_INFO("Performing Local Optimization..."); 
         x = config_.inital_guess;
+    }
 
     ROS_INFO("Performing Local Optimization...                                ");
     std::vector<double> lb = {-config_.translation_range, -config_.translation_range, -config_.translation_range,
