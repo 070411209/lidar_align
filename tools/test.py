@@ -4,6 +4,7 @@ from scipy.spatial.transform import Rotation as R
 import math
 import scipy.linalg as linalg
 import csv
+import matplotlib.pyplot as plt
 
 np.set_printoptions(suppress=True)
 
@@ -19,13 +20,14 @@ def get_pose_data(path,t,ax,ay,az):
         head = next(lines)
         for line in lines:
             t.append(float(line[0]))
-            ax.append(float(line[4]))
-            ay.append(float(line[5]))
-            az.append(float(line[6]))
+            ax.append(float(line[2]))
+            ay.append(float(line[3]))
+            az.append(float(line[4]))
     return t,ax,ay,az
 
 def plot_pose(t,x,y,z):
-    print("fff")
+    plt.scatter(x, y, s = 2,c = 'r',alpha = .5)
+    plt.show()
 
 if __name__ == '__main__':
     pt = "/home/one/src/Apollo_Lib/deepway_apollo/debug_output/pose.csv"
