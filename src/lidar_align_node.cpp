@@ -20,8 +20,11 @@ int main(int argc, char **argv){
     //~ STEP 1.1: Load all lidar data (to lidar.scan_) from Bag.
     bool lidar_from_pcd;    
     std::string input_bag_path;
+    bool transforms_from_csv;
     nh_private.getParam("input_bag_path", input_bag_path);
     nh_private.getParam("lidar_from_pcd", lidar_from_pcd);
+    nh_private.param("transforms_from_csv", transforms_from_csv, false);
+
     ROS_INFO("Loading Pointcloud Data...");
     if (lidar_from_pcd) {
         ROS_INFO("------------- load pointcloud from pcd file -------------");
@@ -40,9 +43,6 @@ int main(int argc, char **argv){
     ROS_INFO("Load Pointcloud done!!!!!!!!!!");
 
     //~ STEP 1.2 Load odom(IMU) data (all transform T) from Bag.
-    bool transforms_from_csv;
-    nh_private.param("transforms_from_csv", transforms_from_csv, false);
-    
     ROS_INFO("Loading Transformation Data...");
     if (transforms_from_csv){
         ROS_INFO("------------- load transforms from csv file -------------");
@@ -51,7 +51,8 @@ int main(int argc, char **argv){
             ROS_FATAL("Could not find input_csv_path parameter, exiting");
             exit(EXIT_FAILURE);
         }
-        else if (!loader.loadTformFromMaplabCSV(input_csv_path, &odom)){
+        
+        if (!loader.loadTformFromMaplabCSV(input_csv_path, &odom)){
             ROS_FATAL("Error loading transforms from CSV.");
             exit(0);
         }

@@ -17,35 +17,38 @@ Loader::Config Loader::getConfig(ros::NodeHandle *nh){
 }
 
 void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointcloud) {
-    pcl::PointCloud<pcl::PointXYZI> cloud_in;
+    // pcl::PointCloud<pcl::PointXYZI> cloud_in;
+    LoaderPointcloud cloud_in;
     if (pcl::io::loadPCDFile(name, cloud_in) < 0)
     {
         PCL_ERROR("\a->点云文件不存在！\n");
         return;
     }
 
-    for (const Point &raw_point : cloud_in){
+    for (const PointAllFields &raw_point : cloud_in){
         PointAllFields point;
         point.x = raw_point.x;
         point.y = raw_point.y;
         point.z = raw_point.z;
         point.intensity = raw_point.intensity;
+        point.time_offset_us = raw_point.time_offset_us;   //
 
-        if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z) || !std::isfinite(point.intensity))
+        if (raw_point.reflectivity == 0)
             continue;
 
         pointcloud->push_back(point);
     }
     // PCLHeader stamp: The value represents microseconds since 1970-01-01 00:00:00 (the UNIX epoch)
     // string substr (size_t pos = 0, size_t len = npos) const;
-    int len = name.size();
-    std::size_t pos = name.find(".pcd");
-    std::string t_ = name.substr(pos-19, 19); // 19: ns time length, 3: ns-us time length
-    pointcloud->header.stamp = std::stoll(t_.c_str()) / 1000ull;   //pcl_stamp = stamp.toNSec() / 1000ull;
+    // int len = name.size();
+    // std::size_t pos = name.find(".pcd");
+    // std::string t_ = name.substr(pos-19, 19); // 19: ns time length, 3: ns-us time length
+    std::string t_ = name.substr(name.length()-20, 16); // 16: ns time length, 3: ns-us time length
+    pointcloud->header.stamp = std::stoll(t_);  //  / 1000ull;   //pcl_stamp = stamp.toNSec() / 1000ull;
     pointcloud->header.seq = seq_;
-    pointcloud->header.frame_id = "no";
+    pointcloud->header.frame_id = "os1";
     seq_++;  
-    std::cout << "The " << seq_ << " of time: " << pointcloud->header.stamp << " load " << cloud_in.points.size() << " points" << '\r' << std::flush;
+    std::cout << "The " << name << " of time: " << pointcloud->header.stamp << " load " << cloud_in.points.size() << " points" << std::endl;// '\r' << std::flush;
 }
 
 void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointcloud *pointcloud){
@@ -62,6 +65,8 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointc
 
     if (has_timing){
         pcl::fromROSMsg(msg, *pointcloud);
+        std::string fn = "/home/one/test_ws/result/t_" + std::to_string(pointcloud->header.stamp) + ".pcd";
+        pcl::io::savePCDFileASCII(fn, *pointcloud);        
         return;
     }
     else if (has_intensity){
@@ -81,6 +86,8 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointc
             pointcloud->push_back(point);
         }
         pointcloud->header = raw_pointcloud.header;
+        std::string fn = "/home/one/test_ws/result/i_" + std::to_string(pointcloud->header.stamp) + ".pcd";
+        pcl::io::savePCDFileASCII(fn, *pointcloud);         
     }
     else{
         pcl::PointCloud<pcl::PointXYZ> raw_pointcloud;
@@ -98,8 +105,9 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointc
             pointcloud->push_back(point);
         }
         pointcloud->header = raw_pointcloud.header;
+        std::string fn = "/home/one/test_ws/result/n_" + std::to_string(pointcloud->header.stamp) + ".pcd";
+        pcl::io::savePCDFileASCII(fn, *pointcloud);         
     }
-    std::cout << "msg of pcd header: " << pointcloud->header.stamp << " " << pointcloud->height << " " << pointcloud->width << '\r' << std::flush;
 }
 
 bool Loader::loadPointcloudFromPCD(const std::string &pcd_path, const Scan::Config &scan_config, Lidar *lidar){
@@ -131,6 +139,10 @@ bool Loader::loadPointcloudFromPCD(const std::string &pcd_path, const Scan::Conf
     }
 
     std::sort(pcdFilenames.begin(), pcdFilenames.end());
+    // , [](std::string a, std::string b) {
+    //   return std::stoi(a.substr(a.length() - 20, 16)) < std::stoi(b.substr(b.length() - 20, 16));
+    // });  
+
     for(auto val : pcdFilenames) {
         LoaderPointcloud pointcloud;
         parsePointcloudPcd(val, &pointcloud);
@@ -178,6 +190,9 @@ bool Loader::loadPointcloudFromROSBag(const std::string &bag_path, const Scan::C
 }
 
 bool Loader::loadTformFromROSBag(const std::string &bag_path, Odom *odom){
+    std::ofstream of_;
+    //判断是否打开
+    of_.open("/home/one/test_ws/result/pose.csv", std::ios::in|std::ios::out|std::ios::trunc);
 
     rosbag::Bag bag;
     try{
@@ -200,9 +215,10 @@ bool Loader::loadTformFromROSBag(const std::string &bag_path, Odom *odom){
 
         Transform T(Transform::Translation(transform_msg.transform.translation.x, transform_msg.transform.translation.y, transform_msg.transform.translation.z),
                     Transform::Rotation(transform_msg.transform.rotation.w, transform_msg.transform.rotation.x, transform_msg.transform.rotation.y, transform_msg.transform.rotation.z));
-        
-        std::cout << "gnss time: " << stamp << " " << transform_msg.transform.translation.x << " " << transform_msg.transform.translation.y << " " << transform_msg.transform.translation.z << std::endl;
         odom->addTransformData(stamp, T);
+
+        of_ << stamp << ",0," << transform_msg.transform.translation.x << "," << transform_msg.transform.translation.y << "," << transform_msg.transform.translation.z << "," <<
+            transform_msg.transform.rotation.w << "," << transform_msg.transform.rotation.x << "," << transform_msg.transform.rotation.y << "," << transform_msg.transform.rotation.z << "\n";
     }
 
     if (odom->empty()){
@@ -210,6 +226,7 @@ bool Loader::loadTformFromROSBag(const std::string &bag_path, Odom *odom){
         return false;
     }
 
+    of_.close();
     return true;
 }
 
@@ -220,7 +237,6 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
     size_t tform_num = 0;
     while (file.peek() != EOF)
     {
-        // std::cout << " Loading transform: " << tform_num++ << " from csv file" << '\r' << std::flush;
 
         Timestamp stamp;
         Transform T;
@@ -230,7 +246,6 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
             odom->addTransformData(stamp, T);
         }
     }
-    ROS_INFO("#loadTformFromMaplabCSV sucess! Loading transform: %d from csv file.", tform_num);
     return true;
 }
 
@@ -238,7 +253,6 @@ bool Loader::loadTformFromMaplabCSV(const std::string &csv_path, Odom *odom)
 bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
                                     Transform *T)
 {
-    // getline() takes an input stream, and writes it to output
     std::string line;
     std::getline(str, line);
 
@@ -270,16 +284,8 @@ bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
     constexpr size_t RX = 6;
     constexpr size_t RY = 7;
     constexpr size_t RZ = 8;
-    // 传递参数提供的字符串转换为long long int
-    *stamp = std::stoll(data[TIME]) / 1000ll;
-    
-    double local_x = std::stod(data[X]) - 470810.0;
-    double local_y = std::stod(data[Y]) - 4399230.0;
-    double local_z = std::stod(data[Z]) - 12.0;
-
-    std::cout << "GNSS time: " << *stamp << " " << local_x << " " << local_y << " " << local_z << '\r' << std::flush;
-
-    *T = Transform(Transform::Translation(local_x, local_y, local_z),
+    *stamp = std::stoll(data[TIME]);    //  / 1000ll;
+    *T = Transform(Transform::Translation(std::stod(data[X]), std::stod(data[Y]), std::stod(data[Z])),
                     Transform::Rotation(std::stod(data[RW]), std::stod(data[RX]), std::stod(data[RY]), std::stod(data[RZ])));
 
     return true;

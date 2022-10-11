@@ -28,7 +28,7 @@ public:
 private:
     static bool getNextCSVTransform(std::istream &str, Timestamp *stamp, Transform *T);
     Config config_;
-    uint64_t seq_ = 0;
+    uint64_t seq_ = 3132;
 };
 
 
