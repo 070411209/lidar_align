@@ -76,5 +76,9 @@
         "activityBar.background": "#102969",
         "titleBar.activeBackground": "#163994",
         "titleBar.activeForeground": "#F8FAFE"
-    }
+    },
+    "python.analysis.extraPaths": [
+        "/home/larry/lidar_ws/devel/lib/python2.7/dist-packages",
+        "/opt/ros/melodic/lib/python2.7/dist-packages"
+    ]
 }

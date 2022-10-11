@@ -17,38 +17,34 @@ Loader::Config Loader::getConfig(ros::NodeHandle *nh){
 }
 
 void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointcloud) {
-    // pcl::PointCloud<pcl::PointXYZI> cloud_in;
-    LoaderPointcloud cloud_in;
+    pcl::PointCloud<pcl::PointXYZI> cloud_in;
+    // LoaderPointcloud cloud_in;
     if (pcl::io::loadPCDFile(name, cloud_in) < 0)
     {
         PCL_ERROR("\a->点云文件不存在！\n");
         return;
     }
 
-    for (const PointAllFields &raw_point : cloud_in){
+    for (const Point &raw_point : cloud_in){
         PointAllFields point;
         point.x = raw_point.x;
         point.y = raw_point.y;
         point.z = raw_point.z;
         point.intensity = raw_point.intensity;
-        point.time_offset_us = raw_point.time_offset_us;   //
+        point.time_offset_us = 0;   // raw_point.time_offset_us;   //
 
-        if (raw_point.reflectivity == 0)
+        if (point.x > 50.0 || point.z < -0.1 || fabs(point.y) > 18.0)
             continue;
 
         pointcloud->push_back(point);
     }
     // PCLHeader stamp: The value represents microseconds since 1970-01-01 00:00:00 (the UNIX epoch)
-    // string substr (size_t pos = 0, size_t len = npos) const;
-    // int len = name.size();
-    // std::size_t pos = name.find(".pcd");
-    // std::string t_ = name.substr(pos-19, 19); // 19: ns time length, 3: ns-us time length
-    std::string t_ = name.substr(name.length()-20, 16); // 16: ns time length, 3: ns-us time length
+    std::string t_ = name.substr(name.length()-23, 16); // 16: ns time length, 3: ns-us time length
     pointcloud->header.stamp = std::stoll(t_);  //  / 1000ull;   //pcl_stamp = stamp.toNSec() / 1000ull;
     pointcloud->header.seq = seq_;
     pointcloud->header.frame_id = "os1";
     seq_++;  
-    std::cout << "The " << name << " of time: " << pointcloud->header.stamp << " load " << cloud_in.points.size() << " points" << std::endl;// '\r' << std::flush;
+    std::cout << name << ",time: " << pointcloud->header.stamp << " load " << pointcloud->points.size() << " points" << std::endl;// '\r' << std::flush;
 }
 
 void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointcloud *pointcloud){
@@ -284,7 +280,7 @@ bool Loader::getNextCSVTransform(std::istream &str, Timestamp *stamp,
     constexpr size_t RX = 6;
     constexpr size_t RY = 7;
     constexpr size_t RZ = 8;
-    *stamp = std::stoll(data[TIME]);    //  / 1000ll;
+    *stamp = std::stoll(data[TIME]) / 1000ll;
     *T = Transform(Transform::Translation(std::stod(data[X]), std::stod(data[Y]), std::stod(data[Z])),
                     Transform::Rotation(std::stod(data[RW]), std::stod(data[RX]), std::stod(data[RY]), std::stod(data[RZ])));
 

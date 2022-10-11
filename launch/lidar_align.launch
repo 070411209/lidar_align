@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-  <arg name="lidar_file" default="/home/one/test_ws/result"/>
+  <arg name="lidar_file" default="/home/one/src/Apollo_Lib/deepway_apollo/debug_output"/>
   <arg name="bag_file" default="/home/one/Downloads/DATA/example.bag"/>
   <arg name="transforms_from_csv" default="true"/>
   <arg name="lidar_from_pcd" default="true"/>
-  <arg name="csv_file" default="/home/one/test_ws/result/pose.csv"/>
+  <arg name="csv_file" default="/home/one/src/Apollo_Lib/deepway_apollo/debug_output/pose.csv"/>
 
   <node pkg="lidar_align" name="lidar_align" type="lidar_align_node" output="screen">
     <param name="input_bag_path" value="$(arg lidar_file)" />
