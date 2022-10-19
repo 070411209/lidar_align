@@ -33,7 +33,7 @@ void Loader::parsePointcloudPcd(const std::string name, LoaderPointcloud *pointc
         point.intensity = raw_point.intensity;
         point.time_offset_us = 0;   // raw_point.time_offset_us;   //
 
-        if (point.x > 50.0 || point.z < -0.1 || fabs(point.y) > 18.0)
+        if (point.x > 40.0 || point.z < -0.1 || fabs(point.y) > 20.0)   //  || fabs(point.y) > 20.0
             continue;
 
         pointcloud->push_back(point);
@@ -65,7 +65,8 @@ void Loader::parsePointcloudMsg(const sensor_msgs::PointCloud2 msg, LoaderPointc
         pcl::io::savePCDFileASCII(fn, *pointcloud);        
         return;
     }
-    else if (has_intensity){
+    
+    if (has_intensity){
         Pointcloud raw_pointcloud;
         pcl::fromROSMsg(msg, raw_pointcloud);
 

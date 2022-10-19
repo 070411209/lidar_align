@@ -191,17 +191,21 @@ std::string Aligner::generateCalibrationString(const Transform &T, const double 
             << time_offset << std::endl
             << std::endl;
     }
+    // T.inverse()
+    Transform T_ = T.inverse();
+    ss << "Active Transformation Matrix from lidar to Pose Sensor Frame: " << std::endl << "[";
+    ss << T_.matrix() << "]" << std::endl << std::endl;
 
-    ss << "ROS Static TF Publisher: <node pkg=\"tf\" "
-            "type=\"static_transform_publisher\" "
-            "name=\"pose_lidar_broadcaster\" args=\"";
-    ss << T.translation().x() << " ";
-    ss << T.translation().y() << " ";
-    ss << T.translation().z() << " ";
-    ss << T.rotation().x() << " ";
-    ss << T.rotation().y() << " ";
-    ss << T.rotation().z() << " ";
-    ss << T.rotation().w() << " POSE_FRAME LIDAR_FRAME 100\" />" << std::endl;
+    Eigen::Quaterniond quat(T_.rotation().w(), T_.rotation().x(), T_.rotation().y(), T_.rotation().z());
+    ss << "Active Hamiltonen Quaternion (w,x,y,z) the Lidar Sensor Frame to pose Frame:" << std::endl << "[" ;
+    ss << quat.w() << " ";
+    ss << quat.x() << " ";
+    ss << quat.y() << " ";
+    ss << quat.z() << "]" << std::endl;
+
+    Eigen::Matrix3d rotation_matrix = quat.toRotationMatrix();
+    Eigen::Vector3d euler_angles = rotation_matrix.eulerAngles(2, 1, 0); 
+    ss <<  "Active Euler angle yaw(z) pitch(y) roll(x) (degrees) = " << euler_angles.transpose()*57.2958 << std::endl;
 
     return ss.str();
 }
